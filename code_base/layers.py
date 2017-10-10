@@ -191,7 +191,14 @@ def conv_forward(x, w, b, conv_param):
     # TODO: Implement the convolutional forward pass.                         #
     # Hint: you can use the function np.pad for padding.                      #
     ###########################################################################
-    pass
+    N, C, H, W = np.shape(x)
+    F, C, HH, WW = np.shape(w)
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    xPadded = np.lib.pad(x, ((0, 0), (0, 0), (pad/2, pad/2),(pad/2, pad/2)), 'constant', constant_values=(0, 0))
+    
+    
+    
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
