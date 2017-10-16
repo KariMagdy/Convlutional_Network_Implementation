@@ -4,3 +4,4 @@ input_files/*
 output_files/*
 kitten.jpg
 puppy.jpg
+code_base/datasets/cifar-10-batches-py/*
