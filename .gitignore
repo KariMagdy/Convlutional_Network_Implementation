@@ -1,1 +1,6 @@
 code_base/cifar-10-batches-py/*
+cifar-10-batches-py/*
+input_files/*
+output_files/*
+kitten.jpg
+puppy.jpg
