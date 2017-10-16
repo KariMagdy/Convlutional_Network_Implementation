@@ -5,3 +5,6 @@ output_files/*
 kitten.jpg
 puppy.jpg
 code_base/datasets/cifar-10-batches-py/*
+CS5242_Assignment_2.ipynb
+CS5242_Assignment_2.pdf
+code_base/classifiers/.DS_Store

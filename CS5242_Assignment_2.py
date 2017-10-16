@@ -5,7 +5,9 @@
 # 
 # **ASSIGNMENT DEADLINE: 19 OCT 2017 (THU) 11.59PM**
 # 
-# In this assignment we will be coding the building blocks for the convolutional neural network and putting them together to train a CNN on the CIFAR10 dataset.
+# In this assignment we will be coding the building blocks for the convolutional neural network and putting them together to train a CNN on the CIFAR2 dataset (taking just 2 classes (airplane and bird) from the original 10 classes).
+# 
+# ***Please note that we have changed to using just 2 classes (airplane and bird) from the original CIFAR10 dataset. get_cifar2_data code in data_utils.py will load the 2-class data accordingly.***
 # 
 # We would like to credit the Stanford CS231n team as much of our code backbone is from their Assignment 2. The teaching team at Stanford has kindly agreed for us to adapt their assignment and code. You will find that we adopt a modular design of the code. You will implement different layer types in isolation and then combine them together into models with different architectures.
 # 
@@ -64,21 +66,21 @@
 from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
-import code_base.classifiers.cnn
-from code_base.data_utils import get_CIFAR10_data
+from code_base.classifiers.cnn import *
+from code_base.data_utils import get_CIFAR2_data
 from code_base.gradient_check import eval_numerical_gradient_array, eval_numerical_gradient
-import code_base.layers
+from code_base.layers import *
 from code_base.solver import Solver
 
-get_ipython().magic(u'matplotlib inline')
+get_ipython().magic('matplotlib inline')
 plt.rcParams['figure.figsize'] = (10.0, 8.0) # set default size of plots
 plt.rcParams['image.interpolation'] = 'nearest'
 plt.rcParams['image.cmap'] = 'gray'
 
 # for auto-reloading external modules
 # see http://stackoverflow.com/questions/1907993/autoreload-of-modules-in-ipython
-get_ipython().magic(u'load_ext autoreload')
-get_ipython().magic(u'autoreload 2')
+get_ipython().magic('load_ext autoreload')
+get_ipython().magic('autoreload 2')
 
 def rel_error(x, y):
   """ returns relative error """
@@ -87,9 +89,9 @@ def rel_error(x, y):
 
 # In[ ]:
 
-# Load the (preprocessed) CIFAR10 data.
+# Load the (preprocessed) CIFAR2 (airplane and bird) data.
 
-data = get_CIFAR10_data()
+data = get_CIFAR2_data()
 for k, v in data.items():
   print('%s: ' % k, v.shape)
 
@@ -142,7 +144,6 @@ correct_out = np.array([[[[-0.08759809, -0.10987781],
 # Compare your output to ours; difference should be around 2e-8
 print('Testing conv_forward')
 print('difference: ', rel_error(out, correct_out))
-
 
 
 # **FOR SUBMISSION:** Submit the corresponding output from your foward convolution for the given input arguments. Load the files `conv_forward_in_x.csv`, `conv_forward_in_w.csv` and `conv_forward_in_b.csv`, they contain the input arguments for the `x`, `w` and `b` respectively and are flattened to a 1D array in C-style, row-major order (see numpy.ravel for details: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel.html). 
@@ -264,12 +265,12 @@ plt.show()
 x_shape = (4, 3, 5, 5)
 w_shape = (2, 3, 3, 3)
 dout_shape = (4, 2, 5, 5)
-x = np.loadtxt('../input_files/conv_backward_in_x.csv')
+x = np.loadtxt('./input_files/conv_backward_in_x.csv')
 x = x.reshape(x_shape)
-w = np.loadtxt('../input_files/conv_backward_in_w.csv')
+w = np.loadtxt('./input_files/conv_backward_in_w.csv')
 w = w.reshape(w_shape)
-b = np.loadtxt('../input_files/conv_backward_in_b.csv')
-dout = np.loadtxt('../input_files/conv_backward_in_dout.csv')
+b = np.loadtxt('./input_files/conv_backward_in_b.csv')
+dout = np.loadtxt('./input_files/conv_backward_in_dout.csv')
 dout = dout.reshape(dout_shape)
 
 conv_param = {'stride': 1, 'pad': 2}
@@ -281,9 +282,9 @@ db_num = eval_numerical_gradient_array(lambda b: conv_forward(x, w, b, conv_para
 out, cache = conv_forward(x, w, b, conv_param)
 dx, dw, db = conv_backward(dout, cache)
 
-np.savetxt('../output_files/conv_backward_out_dx.csv', dx.ravel())
-np.savetxt('../output_files/conv_backward_out_dw.csv', dw.ravel())
-np.savetxt('../output_files/conv_backward_out_db.csv', db.ravel())
+np.savetxt('./output_files/conv_backward_out_dx.csv', dx.ravel())
+np.savetxt('./output_files/conv_backward_out_dw.csv', dw.ravel())
+np.savetxt('./output_files/conv_backward_out_db.csv', db.ravel())
 
 # Your errors should be less than 1e-8'
 print('Testing conv_backward function')
@@ -348,8 +349,6 @@ np.savetxt('./output_files/maxpool_forward_out.csv', out.ravel())
 
 # # Max pooling: Backward
 # Implement the backward pass for the max-pooling operation in the function `max_pool_backward` in the file `code_base/layers.py`.
-# 
-# Check your implementation with numeric gradient checking by running the following:
 
 # **FOR SUBMISSION:** Submit the corresponding output from your backward maxpool for the given input arguments.
 # 
@@ -495,7 +494,7 @@ small_data = {
   'y_val': data['y_val'],
 }
 
-model = ThreeLayerConvNet(weight_scale=1e-2)
+model = ThreeLayerConvNet(num_classes=2, weight_scale=1e-2)
 
 solver = Solver(model, small_data,
                 num_epochs=15, batch_size=50,
@@ -525,12 +524,12 @@ plt.ylabel('accuracy')
 plt.show()
 
 
-# # Train the net on full data
-# By training the three-layer convolutional network for one epoch, you should achieve greater than 40% accuracy on the training set. You may have a wait a few minutes for training to be completed.
+# # Train the net on full CIFAR2 data
+# By training the three-layer convolutional network for one epoch, you should achieve about 80% on the validation set. You may have to wait about 2 minutes for training to be completed.
 
 # In[ ]:
 
-model = ThreeLayerConvNet(weight_scale=0.001, hidden_dim=500, reg=0.001)
+model = ThreeLayerConvNet(num_classes=2, weight_scale=0.001, hidden_dim=500, reg=0.001)
 
 solver = Solver(model, data,
                 num_epochs=1, batch_size=50,
@@ -608,7 +607,7 @@ np.savetxt('./output_files/dropout_backward_out_test.csv', dx_test)
 
 
 # # Train your best three-layer net!
-# Using the `ThreeLayerConvNet` architecture, tweak the hyperparameters and use what you've learnt to train the best net. For Python users, use the pre-processed (mean-normalized) CIFAR10 data provided here. For users of other languages, you can download the data from the CIFAR10 website: https://www.cs.toronto.edu/~kriz/cifar.html
+# Using the `ThreeLayerConvNet` architecture, tweak the hyperparameters and use what you've learnt to train the best net. For Python users, use the pre-processed (mean-normalized) CIFAR2 data provided here. For users of other languages, you can download the data from the CIFAR10 website: https://www.cs.toronto.edu/~kriz/cifar.html, and ***use just the airplane and bird classes for CIFAR2***.
 # 
 # Keep to the same number of layers, but you are free to use more feature maps, hidden nodes, dropout layers etc. Credits will be given based on your test accuracy and your explanations of your network architecture and training method. Please do not use a GPU, you should be able to train a small net to gain insights. You should not need to wait half a day for the training to complete. The accuracy performance is not a major component of the grade.
 # 
