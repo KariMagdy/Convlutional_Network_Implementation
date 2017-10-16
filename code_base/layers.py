@@ -186,24 +186,31 @@ def conv_forward(x, w, b, conv_param):
       W' = 1 + (W + pad - WW) / stride
     - cache: (x, w, b, conv_param)
     """
-    out = None
-    ###########################################################################
-    # TODO: Implement the convolutional forward pass.                         #
-    # Hint: you can use the function np.pad for padding.                      #
-    ###########################################################################
     N, C, H, W = np.shape(x)
     F, C, HH, WW = np.shape(w)
     stride = conv_param['stride']
     pad = conv_param['pad']
+    Ho = 1 + (H + pad - HH) / stride
+    Wo = 1 + (W + pad - WW) / stride
     xPadded = np.lib.pad(x, ((0, 0), (0, 0), (pad/2, pad/2),(pad/2, pad/2)), 'constant', constant_values=(0, 0))
+    filtersMatrix = []
+    out = np.zeros([N,F,Ho,Wo])
     
-    
-    
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    for Filter in w:
+        filtersMatrix.append(Filter.flatten())
+        
+    for n in range(N):
+        point = xPadded[n]
+        inputsMatrix = []
+        for j in range(0 , (W + pad - WW)+1, stride):
+            for i in range(0 , (H + pad - HH)+1, stride):
+                inputsMatrix.append(point[:,j:j+WW,i:i+HH].flatten())
+        output = np.dot(filtersMatrix,np.transpose(inputsMatrix))
+        output += np.repeat(np.reshape(b,[F,-1]),output.shape[1],axis=1)
+        out[n,:,:,:] = output.reshape(F,Ho,Wo)
+        
     cache = (x, w, b, conv_param)
-    return out, cache
+    return out,cache
 
 
 def conv_backward(dout, cache):
@@ -221,9 +228,35 @@ def conv_backward(dout, cache):
     """
     dx, dw, db = None, None, None
     ###########################################################################
-    # TODO: Implement the convolutional backward pass.                        #
-    ###########################################################################
-    pass
+    # TODO: Review details [[[IMPROVE]]]                    #
+    ###########################################################################    
+    x, w, b, conv_param = cache
+    N, C, H, W = x.shape
+    F, _, HH, WW = w.shape
+    _, _, H_out, W_out = dout.shape
+    stride = conv_param['stride']
+    pad = conv_param['pad']
+    
+    dx = np.zeros_like(x)
+    dw = np.zeros_like(w)
+    db = np.zeros_like(b)
+    
+    dxPadded = np.pad(dx, ((0, 0),(0,0),(pad/2,pad/2),(pad/2,pad/2)), 'constant')
+    xPadded = np.pad(x, ((0, 0),(0,0),(pad/2,pad/2),(pad/2,pad/2)), 'constant')
+
+    for n in xrange(N):
+        for f in xrange(F):
+          for hIdx in xrange(H_out):
+            for wIdx in xrange(W_out):
+              h1 = hIdx * stride
+              h2 = hIdx * stride + HH
+              w1 = wIdx * stride
+              w2 = wIdx * stride + WW
+              # [[[[[WRONG]]]]] fix Dx, not multiplying by derv
+              dxPadded[n,:, h1:h2, w1:w2] += w[f,:,:,:] * dout[n,f,hIdx,wIdx]
+              dw[f,:,:,:] += xPadded[n,:, h1:h2, w1:w2] * dout[n,f,hIdx,wIdx]
+              db[f] += dout[n,f,hIdx,wIdx]
+        dx[n,:,:,:] = dxPadded[n,:,pad/2:-pad/2,pad/2:-pad/2]
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -245,14 +278,23 @@ def max_pool_forward(x, pool_param):
     - out: Output data
     - cache: (x, pool_param)
     """
-    out = None
-    ###########################################################################
-    # TODO: Implement the max pooling forward pass                            #
-    ###########################################################################
-    pass
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    N, C, H, W = np.shape(x)
+    stride = pool_param['stride']
+    Hp = pool_param['pool_height']
+    Wp = pool_param['pool_width']
+    Ho = 1 + (H - Hp) / stride
+    Wo = 1 + (W - Wp) / stride
+    out = np.zeros([N,C,Ho,Wo])
+
+    for n in range(N):
+        row,col = [-1,-1]
+        for i in range(0 , H-Hp+1, stride):
+            row += 1
+            for j in range(0 , W-Wp+1, stride):
+                col+= 1
+                for c in range(C): 
+                    out[n,c,row,col] = np.max(x[n,c,j:j+Wp,i:i+Hp])
+            col = -1
     cache = (x, pool_param)
     return out, cache
 
@@ -272,7 +314,28 @@ def max_pool_backward(dout, cache):
     ###########################################################################
     # TODO: Implement the max pooling backward pass                           #
     ###########################################################################
-    pass
+  #############################################################################
+    x, pool_param = cache
+    N, C, H, W = x.shape
+    pool_height = pool_param['pool_height']
+    pool_width = pool_param['pool_width']
+    stride = pool_param['stride']    
+    dx = np.zeros((N, C, H, W))  
+    
+    for i in range(0, N):
+        x_data = x[i]
+        xx, yy = -1, -1
+        for j in range(0, H-pool_height+1, stride):
+            yy += 1
+            for k in range(0, W-pool_width+1, stride):
+                xx += 1
+                x_rf = x_data[:, j:j+pool_height, k:k+pool_width]
+                for l in range(0, C):
+                    x_pool = x_rf[l]
+                    mask = x_pool == np.max(x_pool)
+                    dx[i, l, j:j+pool_height, k:k+pool_width] += dout[i, l, yy, xx] * mask
+
+    xx = -1
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

@@ -144,6 +144,7 @@ print('Testing conv_forward')
 print('difference: ', rel_error(out, correct_out))
 
 
+
 # **FOR SUBMISSION:** Submit the corresponding output from your foward convolution for the given input arguments. Load the files `conv_forward_in_x.csv`, `conv_forward_in_w.csv` and `conv_forward_in_b.csv`, they contain the input arguments for the `x`, `w` and `b` respectively and are flattened to a 1D array in C-style, row-major order (see numpy.ravel for details: https://docs.scipy.org/doc/numpy/reference/generated/numpy.ravel.html). 
 # 
 # For Python users, you can use the code below to load and reshape the arrays to feed into your `conv_forward` function. Code is also provided to flatten the array and save your output to a csv file. For users of other programming languages, you have to submit the output file `conv_forward_out.csv` which contains the flattened output of `conv_forward`. The array must be flattened in row-major order or else our automated scripts will mark your outputs as incorrect.
@@ -263,12 +264,12 @@ plt.show()
 x_shape = (4, 3, 5, 5)
 w_shape = (2, 3, 3, 3)
 dout_shape = (4, 2, 5, 5)
-x = np.loadtxt('./input_files/conv_backward_in_x.csv')
+x = np.loadtxt('../input_files/conv_backward_in_x.csv')
 x = x.reshape(x_shape)
-w = np.loadtxt('./input_files/conv_backward_in_w.csv')
+w = np.loadtxt('../input_files/conv_backward_in_w.csv')
 w = w.reshape(w_shape)
-b = np.loadtxt('./input_files/conv_backward_in_b.csv')
-dout = np.loadtxt('./input_files/conv_backward_in_dout.csv')
+b = np.loadtxt('../input_files/conv_backward_in_b.csv')
+dout = np.loadtxt('../input_files/conv_backward_in_dout.csv')
 dout = dout.reshape(dout_shape)
 
 conv_param = {'stride': 1, 'pad': 2}
@@ -280,9 +281,9 @@ db_num = eval_numerical_gradient_array(lambda b: conv_forward(x, w, b, conv_para
 out, cache = conv_forward(x, w, b, conv_param)
 dx, dw, db = conv_backward(dout, cache)
 
-np.savetxt('./output_files/conv_backward_out_dx.csv', dx.ravel())
-np.savetxt('./output_files/conv_backward_out_dw.csv', dw.ravel())
-np.savetxt('./output_files/conv_backward_out_db.csv', db.ravel())
+np.savetxt('../output_files/conv_backward_out_dx.csv', dx.ravel())
+np.savetxt('../output_files/conv_backward_out_dw.csv', dw.ravel())
+np.savetxt('../output_files/conv_backward_out_db.csv', db.ravel())
 
 # Your errors should be less than 1e-8'
 print('Testing conv_backward function')
