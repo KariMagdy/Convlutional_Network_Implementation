@@ -110,24 +110,23 @@ class ThreeLayerConvNet(object):
       return scores
     
     loss, grads = 0, {}
-    ############################################################################
-    # TODO: Implement the backward pass for the three-layer convolutional net, #
-    # storing the loss and gradients in the loss and grads variables. Compute  #
-    # data loss using softmax, and make sure that grads[k] holds the gradients #
-    # for self.params[k]. Don't forget to add L2 regularization!               #
-    ############################################################################
-    loss, dout = softmax_loss(X, y)
+
+    loss, dout = softmax_loss(scores, y)
+    
+    loss += sum(0.5*self.reg*np.sum(W_tmp**2) for W_tmp in [W1, W2, W3])
+    
     dx_out, grads['W3'], grads['b3'] = affine_backward(dout, out_cache)
     dreluII = relu_backward(dx_out, relu_cacheII)
     dx_affine, grads['W2'], grads['b2'] = affine_backward(dreluII, affine_cache)
     dpool = max_pool_backward(dx_affine, pool_cache)
     drelu = relu_backward(dpool, relu_cache)
     dx, grads['W1'], grads['b1'] = conv_backward(drelu, conv_cache)
+    
+    grads['W3'] += self.reg*self.params['W3']
+    grads['W2'] += self.reg*self.params['W2']
+    grads['W1'] += self.reg*self.params['W1']
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
     
     return loss, grads
-  
-  
-pass
