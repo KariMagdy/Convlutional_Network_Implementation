@@ -289,12 +289,12 @@ def max_pool_forward(x, pool_param):
     for n in range(N):
         row,col = [-1,-1]
         for i in range(0 , H-Hp+1, stride):
-            row += 1
+            col += 1
             for j in range(0 , W-Wp+1, stride):
-                col+= 1
+                row+= 1
                 for c in range(C): 
                     out[n,c,row,col] = np.max(x[n,c,j:j+Wp,i:i+Hp])
-            col = -1
+            row = -1
     cache = (x, pool_param)
     return out, cache
 
@@ -335,7 +335,7 @@ def max_pool_backward(dout, cache):
                     mask = x_pool == np.max(x_pool)
                     dx[i, l, j:j+pool_height, k:k+pool_width] += dout[i, l, yy, xx] * mask
 
-    xx = -1
+            xx = -1
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

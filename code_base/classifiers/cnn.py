@@ -39,17 +39,21 @@ class ThreeLayerConvNet(object):
     self.use_dropout = dropout > 0
     self.dtype = dtype
     
-    ############################################################################
-    # TODO: Initialize weights and biases for the three-layer convolutional    #
-    # network. Weights should be initialized from a Gaussian with standard     #
-    # deviation equal to weight_scale; biases should be initialized to zero.   #
-    # All weights and biases should be stored in the dictionary self.params.   #
-    # Store weights and biases for the convolutional layer using the keys 'W1' #
-    # and 'b1'; use keys 'W2' and 'b2' for the weights and biases of the       #
-    # hidden affine layer, and keys 'W3' and 'b3' for the weights and biases   #
-    # of the output affine layer.                                              #
-    ############################################################################
-    pass
+    C, H, W = input_dim
+    ConvPad = filter_size -1
+    PoolStride = 2
+    Ho_Conv1 = 1 + (H + ConvPad - filter_size)
+    Wo_Conv1 = 1 + (W + ConvPad - filter_size)
+    Ho_Pool1 = 1 + (Ho_Conv1 - 2) / PoolStride
+    Wo_Pool1 = 1 + (Wo_Conv1 - 2) / PoolStride
+    
+    self.params['W1'] = np.random.normal(0,weight_scale,(num_filters, C, filter_size, filter_size))
+    self.params['b1'] = np.random.normal(0,weight_scale,num_filters)
+    self.params['W2'] = np.random.normal(0,weight_scale,(num_filters*Ho_Pool1*Wo_Pool1,hidden_dim))
+    self.params['b2'] = np.random.normal(0,weight_scale,hidden_dim)
+    self.params['W3'] = np.random.normal(0,weight_scale,(hidden_dim,num_classes))
+    self.params['b3'] = np.random.normal(0,weight_scale,num_classes)
+    
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -91,20 +95,13 @@ class ThreeLayerConvNet(object):
         self.dropout_param['mode'] = mode
     
     scores = None
-    ############################################################################
-    # TODO: Implement the forward pass for the three-layer convolutional net,  #
-    # computing the class scores for X and storing them in the scores          #
-    # variable.                                                                #
-    #                                                                          #
-    # When using dropout, you'll need to pass self.dropout_param to each       #
-    # dropout forward pass.                                                    #
-    #                                                                          #
-    # When using batch normalization, you'll need to pass self.bn_params[0] to #
-    # the forward pass for the first batch normalization layer, pass           #
-    # self.bn_params[1] to the forward pass for the second batch normalization #
-    # layer, etc.                                                              #
-    ############################################################################
-    pass
+
+    conv_out, conv_cache = conv_forward(X, W1, b1, conv_param)
+    relu_out, relu_cache = relu_forward(conv_out)
+    pool_out, pool_cache = max_pool_forward(relu_out, pool_param)
+    affine_out, affine_cache = affine_forward(pool_out, W2, b2) #[[[FLATTEN??]]]
+    relu_outII, relu_cacheII = relu_forward(affine_out)
+    scores, out_cache = affine_forward(relu_outII, W3, b3)
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
@@ -119,7 +116,13 @@ class ThreeLayerConvNet(object):
     # data loss using softmax, and make sure that grads[k] holds the gradients #
     # for self.params[k]. Don't forget to add L2 regularization!               #
     ############################################################################
-    pass
+    loss, dout = softmax_loss(X, y)
+    dx_out, grads['W3'], grads['b3'] = affine_backward(dout, out_cache)
+    dreluII = relu_backward(dx_out, relu_cacheII)
+    dx_affine, grads['W2'], grads['b2'] = affine_backward(dreluII, affine_cache)
+    dpool = max_pool_backward(dx_affine, pool_cache)
+    drelu = relu_backward(dpool, relu_cache)
+    dx, grads['W1'], grads['b1'] = conv_backward(drelu, conv_cache)
     ############################################################################
     #                             END OF YOUR CODE                             #
     ############################################################################
