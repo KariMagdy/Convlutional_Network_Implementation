@@ -1,5 +1,6 @@
 from builtins import range
 import numpy as np
+from code_base.im2col import *
 
 
 def affine_forward(x, w, b):
@@ -111,15 +112,8 @@ def dropout_forward(x, dropout_param):
         np.random.seed(dropout_param['seed'])
 
     if mode == 'train':
-        #######################################################################
-        # TODO: Implement training phase forward pass for inverted dropout.   #
-        # Store the dropout mask in the mask variable.                        #
-        #######################################################################
         mask = np.random.binomial(1,1-p,x.shape) * (1.0/(1-p))
         out = x * mask 
-        #######################################################################
-        #                           END OF YOUR CODE                          #
-        #######################################################################
     elif mode == 'test':
         mask = None
         out = x
@@ -174,6 +168,13 @@ def conv_forward(x, w, b, conv_param):
       W' = 1 + (W + pad - WW) / stride
     - cache: (x, w, b, conv_param)
     """
+    
+    
+    
+    #################################
+    # MY IMPLEMENTATION [[SLOW]]
+    #################################
+    """
     N, C, H, W = np.shape(x)
     F, C, HH, WW = np.shape(w)
     stride = conv_param['stride']
@@ -198,6 +199,28 @@ def conv_forward(x, w, b, conv_param):
         out[n,:,:,:] = output.reshape(F,Ho,Wo)
         
     cache = (x, w, b, conv_param)
+    """
+    
+    
+    """
+    Faster implementation [[[NOT MINE]]]
+    """
+    N, C, H, W = x.shape
+    num_filters, _, filter_height, filter_width = w.shape
+    stride, pad = conv_param['stride'], conv_param['pad']
+    
+    # Create output
+    out_height = 1 + (H + pad - filter_height) / stride
+    out_width = 1 + (W + pad - filter_width) / stride
+    out = np.zeros((N, num_filters, out_height, out_width), dtype=x.dtype)
+    
+    x_cols = im2col_indices(x, w.shape[2], w.shape[3], pad/2, stride)
+    #x_cols = im2col_cython(x, w.shape[2], w.shape[3], pad, stride)
+    res = w.reshape((w.shape[0], -1)).dot(x_cols) + b.reshape(-1, 1)       
+    out = res.reshape(w.shape[0], out.shape[2], out.shape[3], x.shape[0])
+    out = out.transpose(3, 0, 1, 2)
+
+    cache = (x, w, b, conv_param, x_cols)
     return out,cache
 
 
@@ -215,6 +238,11 @@ def conv_backward(dout, cache):
     - db: Gradient with respect to b
     """
     dx, dw, db = None, None, None
+    
+    """
+    [[[SLOW]]]
+    """
+    """
     ###########################################################################
     # TODO: Review details [[[IMPROVE]]]                    #
     ###########################################################################    
@@ -240,14 +268,23 @@ def conv_backward(dout, cache):
               h2 = hIdx * stride + HH
               w1 = wIdx * stride
               w2 = wIdx * stride + WW
-              # [[[[[WRONG]]]]] fix Dx, not multiplying by derv
               dxPadded[n,:, h1:h2, w1:w2] += w[f,:,:,:] * dout[n,f,hIdx,wIdx]
               dw[f,:,:,:] += xPadded[n,:, h1:h2, w1:w2] * dout[n,f,hIdx,wIdx]
               db[f] += dout[n,f,hIdx,wIdx]
         dx[n,:,:,:] = dxPadded[n,:,pad/2:-pad/2,pad/2:-pad/2]
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+    """      
+    x, w, b, conv_param, x_cols = cache
+    stride, pad = conv_param['stride'], conv_param['pad']
+    
+    db = np.sum(dout, axis=(0, 2, 3))
+    num_filters, _, filter_height, filter_width = w.shape
+    dout_reshaped = dout.transpose(1, 2, 3, 0).reshape(num_filters, -1)
+    dw = dout_reshaped.dot(x_cols.T).reshape(w.shape)
+    dx_cols = w.reshape(num_filters, -1).T.dot(dout_reshaped)
+    dx = col2im_indices(dx_cols, x.shape, filter_height, filter_width, pad/2, stride)
+    #dx = col2im_cython(dx_cols, x.shape[0], x.shape[1], x.shape[2], x.shape[3],
+    #                    filter_height, filter_width, pad, stride)
+  
     return dx, dw, db
 
 
@@ -265,6 +302,11 @@ def max_pool_forward(x, pool_param):
     Returns a tuple of:
     - out: Output data
     - cache: (x, pool_param)
+    """
+    
+    ###########################
+    # [[MINE]] slow
+    ##########################
     """
     N, C, H, W = np.shape(x)
     stride = pool_param['stride']
@@ -284,6 +326,26 @@ def max_pool_forward(x, pool_param):
                     out[n,c,row,col] = np.max(x[n,c,j:j+Wp,i:i+Hp])
             row = -1
     cache = (x, pool_param)
+    """
+    
+    ###############################
+    # [[NOT MINE but fast]] from https://github.com/cthorey/CS231/blob/master/assignment2/ 
+    ###############################
+
+    N, C, H, W = x.shape
+    pool_height, pool_width = pool_param['pool_height'], pool_param['pool_width']
+    stride = pool_param['stride']
+    
+    out_height = (H - pool_height) / stride + 1
+    out_width = (W - pool_width) / stride + 1
+    
+    x_split = x.reshape(N * C, 1, H, W)
+    x_cols = im2col_indices(x_split, pool_height, pool_width, padding=0, stride=stride)
+    x_cols_argmax = np.argmax(x_cols, axis=0)
+    x_cols_max = x_cols[x_cols_argmax, np.arange(x_cols.shape[1])]
+    out = x_cols_max.reshape(out_height, out_width, N, C).transpose(2, 3, 0, 1)
+    cache = (x, x_cols, x_cols_argmax, pool_param)
+    
     return out, cache
 
 
@@ -298,11 +360,11 @@ def max_pool_backward(dout, cache):
     Returns:
     - dx: Gradient with respect to x
     """
+    ##################################
+    # MINE
+    #################################
+    """
     dx = None
-    ###########################################################################
-    # TODO: Implement the max pooling backward pass                           #
-    ###########################################################################
-  #############################################################################
     x, pool_param = cache
     N, C, H, W = x.shape
     pool_height = pool_param['pool_height']
@@ -324,9 +386,20 @@ def max_pool_backward(dout, cache):
                     dx[i, l, j:j+pool_height, k:k+pool_width] += dout[i, l, yy, xx] * mask
 
             xx = -1
-    ###########################################################################
-    #                             END OF YOUR CODE                            #
-    ###########################################################################
+      """
+    ##########################
+    # NOT MINE
+    ########################## 
+    x, x_cols, x_cols_argmax, pool_param = cache
+    N, C, H, W = x.shape
+    pool_height, pool_width = pool_param['pool_height'], pool_param['pool_width']
+    stride = pool_param['stride']
+    
+    dout_reshaped = dout.transpose(2, 3, 0, 1).flatten()
+    dx_cols = np.zeros_like(x_cols)
+    dx_cols[x_cols_argmax, np.arange(dx_cols.shape[1])] = dout_reshaped
+    dx = col2im_indices(dx_cols, (N * C, 1, H, W), pool_height, pool_width, padding=0, stride=stride)
+    dx = dx.reshape(x.shape)       
     return dx
 
 
