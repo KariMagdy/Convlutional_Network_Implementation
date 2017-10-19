@@ -138,7 +138,7 @@ def dropout_backward(dout, cache):
 
     dx = None
     if mode == 'train':
-        dx = dx * mask
+        dx = dout * mask
     elif mode == 'test':
         dx = dout
     return dx

@@ -1,5 +1,6 @@
 from builtins import object
 import numpy as np
+from random import *
 
 from code_base.layers import *
 from code_base.layer_utils import *

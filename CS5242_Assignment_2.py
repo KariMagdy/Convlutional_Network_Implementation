@@ -67,7 +67,7 @@ from __future__ import print_function
 import numpy as np
 import matplotlib.pyplot as plt
 from code_base.classifiers.cnn import *
-from code_base.data_utils import get_CIFAR2_data
+from code_base.data_utils import get_CIFAR2_data,get_CIFAR10_data
 from code_base.gradient_check import eval_numerical_gradient_array, eval_numerical_gradient
 from code_base.layers import *
 from code_base.solver import Solver
@@ -630,3 +630,20 @@ np.savetxt('./output_files/dropout_backward_out_test.csv', dx_test)
 # **ASSIGNMENT DEADLINE: 19 OCT 2017 (THU) 11.59PM**
 # 
 # Do not include the CIFAR data files as it takes up substantial memory. Please zip up the following folders under a folder named with your NUSNET ID: eg. `e0123456g.zip' and submit the zipped folder to IVLE/workbin/assignment 2 submission.
+
+dataII = get_CIFAR10_data()
+for k, v in dataII.items():
+  print('%s: ' % k, v.shape)
+
+model = ThreeLayerConvNet(num_classes=10, weight_scale=0.001, hidden_dim=500, reg=0.01,num_filters=64, filter_size=7,
+               dropout=0.1, seed=None)
+
+solver = Solver(model, dataII,
+                num_epochs=5, batch_size=50,
+                update_rule='adam',
+                optim_config={
+                  'learning_rate': 1e-4,
+                },
+                verbose=True, print_every=100)
+solver.train()
+
