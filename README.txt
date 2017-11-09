@@ -1,7 +1,7 @@
 Implementation of building blocks for a convolutional neural network. 
 This work is part of CS5242 Assignment 2. F
 
-# Install dependencies.
+#Install dependencies.
 $ pip install -r requirements.txt # Install dependencies
 
 <<Get CIFAR10 data>>
