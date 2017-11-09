@@ -636,10 +636,10 @@ for k, v in dataII.items():
   print('%s: ' % k, v.shape)
 
 model = ThreeLayerConvNet(num_classes=10, weight_scale=0.001, hidden_dim=500, reg=0.01,num_filters=64, filter_size=7,
-               dropout=0.1, seed=None)
+               dropout=0.5, seed=None)
 
 solver = Solver(model, dataII,
-                num_epochs=5, batch_size=50,
+                num_epochs=10, batch_size=50,
                 update_rule='adam',
                 optim_config={
                   'learning_rate': 1e-4,
@@ -647,3 +647,15 @@ solver = Solver(model, dataII,
                 verbose=True, print_every=100)
 solver.train()
 
+plt.subplot(2, 1, 1)
+plt.plot(solver.loss_history, 'o')
+plt.xlabel('iteration')
+plt.ylabel('loss')
+
+plt.subplot(2, 1, 2)
+plt.plot(solver.train_acc_history, '-o')
+plt.plot(solver.val_acc_history, '-o')
+plt.legend(['train', 'val'], loc='upper left')
+plt.xlabel('epoch')
+plt.ylabel('accuracy')
+plt.savefig('fifth.jpeg',dpi = 1024)
